@@ -1,21 +1,21 @@
 import { useState, useCallback } from 'react';
-import { useProvider, useSigner } from 'wagmi';
-import { bridgeService, WithdrawProof } from '../services/bridgeService';
+import { usePublicClient, useWalletClient } from 'wagmi';
+import { bridgeService } from '../services/bridgeService';
 import { ephemeralChain } from '../services/ephemeralChain';
 
 export function useBridge() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const provider = useProvider();
-  const { data: signer } = useSigner();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
 
   // Initialize bridge service
   const initializeBridge = useCallback(async () => {
-    if (provider) {
-      await bridgeService.initialize(provider, signer || undefined);
+    if (publicClient) {
+      await bridgeService.initialize(publicClient, walletClient || undefined);
     }
-  }, [provider, signer]);
+  }, [publicClient, walletClient]);
 
   const depositETH = useCallback(async (amount: string, ephemeralAddress: string) => {
     try {

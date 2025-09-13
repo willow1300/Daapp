@@ -77,12 +77,31 @@ export function useEphemeralChain() {
   }, [fetchChainState]);
 
   useEffect(() => {
-    fetchChainState();
+    let mounted = true;
+    let interval: NodeJS.Timeout;
     
-    // Poll for updates every 5 seconds
-    const interval = setInterval(fetchChainState, 5000);
+    const startPolling = async () => {
+      if (mounted) {
+        await fetchChainState();
+        // Only start polling if component is still mounted
+        if (mounted) {
+          interval = setInterval(() => {
+            if (mounted) {
+              fetchChainState();
+            }
+          }, 5000);
+        }
+      }
+    };
     
-    return () => clearInterval(interval);
+    startPolling();
+    
+    return () => {
+      mounted = false;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [fetchChainState]);
 
   return {

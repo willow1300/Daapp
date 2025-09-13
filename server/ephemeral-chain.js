@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const crypto = require('crypto-js');
+const CryptoJS = require('crypto-js');
+const crypto = require('crypto');
 const { ethers } = require('ethers');
 
 const app = express();
@@ -13,7 +14,7 @@ app.use(express.json());
 // In-memory storage for ephemeral transactions (can be deleted)
 let transactionBlackBox = new Map();
 let currentState = {
-  commitment: '0x' + crypto.SHA256('genesis').toString(),
+  commitment: '0x' + CryptoJS.SHA256('genesis').toString(),
   blockHeight: 0,
   nullifiers: new Set(),
   notes: new Map(),
@@ -49,16 +50,16 @@ db.serialize(() => {
 
 // Utility functions
 function generateCommitment(value, recipient, randomness) {
-  return crypto.SHA256(`${value}:${recipient}:${randomness}`).toString();
+  return CryptoJS.SHA256(`${value}:${recipient}:${randomness}`).toString();
 }
 
 function generateNullifier(privateKey, commitment) {
-  return crypto.SHA256(`${privateKey}:${commitment}`).toString();
+  return CryptoJS.SHA256(`${privateKey}:${commitment}`).toString();
 }
 
 function generateZKProof(stateTransition) {
   // Simplified proof generation - in production use circom/snarkjs
-  return crypto.SHA256(JSON.stringify(stateTransition)).toString();
+  return CryptoJS.SHA256(JSON.stringify(stateTransition)).toString();
 }
 
 // API Endpoints
@@ -136,7 +137,7 @@ async function processTransaction(txId) {
       nullifiers: Array.from(currentState.nullifiers),
       blockHeight: currentState.blockHeight
     };
-    currentState.commitment = '0x' + crypto.SHA256(JSON.stringify(stateData)).toString();
+    currentState.commitment = '0x' + CryptoJS.SHA256(JSON.stringify(stateData)).toString();
     
     // Generate zk proof
     const proof = generateZKProof({

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { PublicClient, WalletClient } from 'viem';
 import { bridgeContracts } from '../config/web3';
 
 // Bridge contract ABI (simplified)
@@ -34,7 +35,9 @@ class BridgeService {
   private provider: ethers.Provider | null = null;
   private signer: ethers.Signer | null = null;
 
-  async initialize(provider: ethers.Provider, signer?: ethers.Signer) {
+  async initialize(provider: any, signer?: any) {
+    // For now, we'll use a simple provider setup
+    // In production, properly convert viem clients to ethers
     this.provider = provider;
     this.signer = signer || null;
   }

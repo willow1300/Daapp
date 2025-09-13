@@ -5,9 +5,17 @@ import { Wallet, Send, Eye, Copy, RefreshCw, Shield, Key } from 'lucide-react';
 import { useEphemeralChain } from '../hooks/useEphemeralChain';
 import { useBridge } from '../hooks/useBridge';
 
+interface ChainState {
+  currentCommitment: string;
+  proofGenerated: boolean;
+  blockHeight: number;
+  nullifierCount: number;
+  activeNotes: number;
+}
+
 interface WalletProps {
-  chainState: any;
-  setChainState: (state: any) => void;
+  chainState: ChainState;
+  setChainState: (state: ChainState | ((prev: ChainState) => ChainState)) => void;
 }
 
 const WalletInterface: React.FC<WalletProps> = ({ chainState, setChainState }) => {
@@ -29,7 +37,22 @@ const WalletInterface: React.FC<WalletProps> = ({ chainState, setChainState }) =
   const [ephemeralBalance, setEphemeralBalance] = useState(0);
   const [loading, setLoading] = useState(false);
   
-  const privateKey = '0x4c8a2f1e9d3b6a7c5e2f8d9a3b1c7e4f6d2a9c5b8e1f7d4a6c9b2e5f8a3c6d9';
+  // Generate ephemeral private key (in production, this should be properly secured)
+  const [privateKey, setPrivateKey] = useState<string>('');
+  
+  useEffect(() => {
+    // Generate a random private key for demonstration
+    // In production, use proper key derivation and secure storage
+    const generatePrivateKey = () => {
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      return '0x' + Array.from(randomBytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    };
+    
+    if (!privateKey) {
+      setPrivateKey(generatePrivateKey());
+    }
+  }, [privateKey]);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -45,9 +68,10 @@ const WalletInterface: React.FC<WalletProps> = ({ chainState, setChainState }) =
   const fetchEphemeralBalance = async (ephemeralAddr: string) => {
     try {
       const balanceData = await getBalance(ephemeralAddr);
-      setEphemeralBalance(balanceData.balance);
+      setEphemeralBalance(balanceData?.balance || 0);
     } catch (error) {
       console.error('Error fetching ephemeral balance:', error);
+      setEphemeralBalance(0); // Set default value on error
     }
   };
 
@@ -68,7 +92,7 @@ const WalletInterface: React.FC<WalletProps> = ({ chainState, setChainState }) =
         to: recipientAddress,
         amount: parseFloat(sendAmount),
         asset: selectedAsset,
-        signature: privateKey // In production, sign with actual private key
+        signature: privateKey || 'demo-signature' // In production, properly sign the transaction
       });
       
       console.log('Transaction submitted:', result);
@@ -117,8 +141,22 @@ const WalletInterface: React.FC<WalletProps> = ({ chainState, setChainState }) =
     return commitment;
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for browsers that don't support clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+    }
   };
 
   return (

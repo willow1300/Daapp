@@ -1,7 +1,6 @@
-import { createConfig, configureChains, mainnet } from 'wagmi';
-import { alchemyProvider } from 'wagmi/providers/alchemy';
-import { publicProvider } from 'wagmi/providers/public';
-import { getDefaultWallets } from '@rainbow-me/rainbowkit';
+import { http, createConfig } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 
 const alchemyApiKey = import.meta.env.VITE_ALCHEMY_API_KEY;
 const walletConnectProjectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID;
@@ -14,26 +13,21 @@ if (!walletConnectProjectId) {
   console.warn('VITE_WALLETCONNECT_PROJECT_ID not found in environment variables');
 }
 
-const { chains, publicClient, webSocketPublicClient } = configureChains(
-  [mainnet],
-  [
-    alchemyProvider({ apiKey: alchemyApiKey || 'demo' }),
-    publicProvider(),
-  ]
-);
-
-const { connectors } = getDefaultWallets({
+export const wagmiConfig = getDefaultConfig({
   appName: 'Ephemeral Chain',
   projectId: walletConnectProjectId || 'demo',
-  chains,
+  chains: [mainnet],
+  transports: {
+    [mainnet.id]: http(
+      alchemyApiKey 
+        ? `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`
+        : undefined
+    ),
+  },
+  ssr: false,
 });
 
-export const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors,
-  publicClient,
-  webSocketPublicClient,
-});
+export const chains = [mainnet];
 
 export { chains };
 
